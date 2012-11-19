@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+require 'socket'
+require 'timeout'
+
+def inms(t)
+  "#{"%2.1f" % [t * 1000.0]} ms"
+end
+
+def ins(t)
+  "#{t} second#{t == 1 ? "" : "s"}"
+end
+
+dest = ARGV[0]
+fail "usage: coaping addr [port [timeout [ntry]]]" unless dest
+port = Integer(ARGV[1] || 5683)
+maxtime = Float(ARGV[2] || 1)
+maxnum = Integer(ARGV[3] || 20)
+
+begin
+  u = UDPSocket.new(Socket::AF_INET6)
+  u.connect(dest, port)
+rescue
+  u = UDPSocket.new(Socket::AF_INET)
+  u.connect(dest, port)
+end
+
+puts "Trying #{maxnum} times with #{dest} at port #{port}, waiting #{ins(maxtime)} max:"
+
+t = []
+
+maxnum.times do |n|
+  begin
+    t[n] = Time.now
+    u.send [0b01000000, 0, n].pack("CCn"), 0
+    response, addr = timeout(maxtime) { u.recvfrom(100) }
+    if response.bytesize != 4
+      p [response, addr]
+    else
+      hd, code, seq = response.unpack("CCn")
+      if hd != 0b01110000 || code != 0 || seq != n
+        p [(inms(Time.now-t[seq]) rescue "-"), [hd.to_s(2), code, seq], addr]
+      else
+        puts "#{"%3d" % n} #{inms(Time.now - t[n])} #{addr[2]}"
+      end
+    end
+  rescue Timeout::Error => e
+    puts "no response after #{ins(maxtime)}"
+  rescue SystemCallError => e
+    puts e                      # e.class.name
+  rescue Interrupt => e
+    puts e
+    exit
+  end
+end
