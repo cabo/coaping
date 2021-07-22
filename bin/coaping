@@ -33,7 +33,7 @@ maxnum.times do |n|
   begin
     t[n] = Time.now
     u.send [0b01000000, 0, n].pack("CCn"), 0
-    response, addr = timeout(maxtime) { u.recvfrom(100) }
+    response, addr = Timeout::timeout(maxtime) { u.recvfrom(100) }
     if response.bytesize != 4
       p [response, addr]
     else

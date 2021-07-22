@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
   s.name = 'coaping'
-  s.version = '0.0.1'
+  s.version = '0.0.2'
   s.summary = "coaping: a ping for CoAP, the Constrained Application Protocol."
   s.description = %{coaping: check whether your CoAP server is still there.}
   s.files = %w(README.md coaping.gemspec bin/coaping)
